@@ -62,20 +62,41 @@ class AudioNorm:
         
         return y_resampled
 
-    def _padding(self, audio: np.ndarray, sample_rate: int) -> np.ndarray:
+    def _padding(self, audio_samples: np.ndarray) -> np.ndarray:
         """
-        The method applies padding to sound samples smaller than our window size.
+        Pads a 1-D audio np.ndarray up to the target window size, by adding samples at the end. If the audio length >= window size
+        ignore.
 
         Args:
-            audio (np.ndarray): The argument must be in the form (Number of samples, Number of channels). This can easily be obtained by 
+            audio_samples (np.ndarray): Audio samples data. Accepted shape is (Number of samples, )
+
+        Returns:
+            padded audio samples of shape (Number of samples,)
         """
-        number_of_samples = audio[0]
+
+        # Calculate the length of the audio
+        number_of_samples = audio_samples.shape[0]
+        audio_length = float(number_of_samples / self.sampling_rate)
+
+        # If audio length >= window size, ignore it
+        if audio_length >= self.window_size:
+            return audio_samples
+        
+        pad_amount = int(round((self.window_size - audio_length) * self.sampling_rate))
+        padded = np.pad(audio_samples, (0, pad_amount), mode="constant", constant_values=0.0)
+
+        return padded.astype(np.float32)
+
 
     def _segmentation(self):
         pass
 
 if __name__ == "__main__":
     audionorm = AudioNorm()
+
+    ##########################################################################################
+    # TEST SERIES 1
+    ##########################################################################################
 
     # 1. Create 1 second of dummy audio (a basic 440Hz sine wave) at 44100Hz
     orig_sr = 44100
@@ -111,3 +132,7 @@ if __name__ == "__main__":
     end3 = time.perf_counter()
     print(f"Same SR audio shape: {same_audio.shape} (Expected: {orig_sr}). Time taken: {end3-start3:.6f}s")
     print(f"Returned exact same array? {same_audio is dummy_audio}")
+
+    ##########################################################################################
+    # TEST SERIES 2
+    ##########################################################################################
