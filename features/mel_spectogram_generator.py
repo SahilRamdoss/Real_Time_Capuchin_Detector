@@ -43,17 +43,26 @@ class MelSpectrogramGen:
 
 
     @classmethod
-    def from_config(cls, config_path: str = "..\\configs\\config.yaml") -> "MelSpectrogramGen":
+    def from_config(cls, config_path: str = None) -> "MelSpectrogramGen":
         """
-        Use the settings found in config.yaml file to create spectrogram
+        Use the settings found in config.yaml file to create spectrogram.
+
+        Uses the default hardcoded path but can be changed by the optional parameter config_path
+
+        Params:
+            config_path (str): The file path for the config.yaml file (OPTIONAL)
         """
+
+        if config_path == None:
+            root_dir = Path(__file__).resolve().parent.parent
+            config_path = str(root_dir) + "\\configs\\config.yaml"
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        audio_cfg = config['spec_config']
+        spec_cfg= config['spec_config']
 
-        return cls(**audio_cfg)
+        return cls(**spec_cfg)
 
     ###########################################################################
     #                           PUBLIC METHODS                                #
