@@ -105,7 +105,10 @@ class AudioNorm:
         return padded.astype(np.float32)
 
     def noise_padding(self):
-        pass
+        """
+        This will be done in the data augmentation part as Background Noise Injection (SNR between-class mixing)
+        """
+        raise NotImplementedError
     
     def segmentation(self):
         pass
