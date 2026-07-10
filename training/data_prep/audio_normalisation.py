@@ -4,6 +4,7 @@ import scipy
 import time
 import random
 from pathlib import Path
+from utils.config_finder import find_config_path
 
 ## REMARK: THIS FILE IS USED FOR TRAINING ONLY. HENCE, WE CAN USE TENSORFLOW.IO FOR AUDIO PROCESSING
 
@@ -23,16 +24,25 @@ class AudioNorm:
             config_path (str): The file path for the config.yaml file (OPTIONAL)
         """
 
-        if config_path == None:
-            root_dir = Path(__file__).resolve().parent.parent.parent
-            config_path = str(root_dir) + "\\configs\\config.yaml"
+        if config_path is None:
+            config_path = find_config_path(__file__)
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        audio_cfg = config["audio_config"]
+        try:
+            shared_cfg = config["shared"]
+            audio_cfg = config["audio_config"]
+            merged_cfg = {
+                "window_size": shared_cfg["window_size"],
+                "sr": shared_cfg["sr"]
+            }
+        except KeyError as e:
+            raise ValueError(
+                f"config.yaml is missing expected key {e}. Check that 'shared.sr', 'shared.window_size', and 'audio_config' are present."
+            ) from e
 
-        return cls(**audio_cfg)
+        return cls(**merged_cfg)
 
     def normalize_sampling_rate(self, audio: np.ndarray, orig_sr: int = None, target_sr: int = None) -> np.ndarray:
         """
@@ -78,6 +88,9 @@ class AudioNorm:
         Pads a 1-D audio np.ndarray up to the target window size, by adding samples at the end. 
         If the audio length >= window size ignore.
 
+        ASSUMPTION: The audio input contains 1 full bird call. This is important as the padding
+        can be done at the start or the end of the call.
+
         Args:
             audio_samples (np.ndarray): Audio samples data. Accepted shape is (Number of samples, )
 
@@ -111,7 +124,10 @@ class AudioNorm:
         raise NotImplementedError
     
     def segmentation(self):
-        pass
+        """
+        Overlapping segmentation to be done
+        """
+        raise NotImplementedError
 
 if __name__ == "__main__":
     audionorm = AudioNorm()

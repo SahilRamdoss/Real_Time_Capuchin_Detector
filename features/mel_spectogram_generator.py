@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.signal import butter, sosfilt, sosfiltfilt
 import yaml
+from utils.config_finder import find_config_path
 
 class MelSpectrogramGen:
 
@@ -53,16 +54,22 @@ class MelSpectrogramGen:
             config_path (str): The file path for the config.yaml file (OPTIONAL)
         """
 
-        if config_path == None:
-            root_dir = Path(__file__).resolve().parent.parent
-            config_path = str(root_dir) + "\\configs\\config.yaml"
+        if config_path is None:
+            config_path = find_config_path(__file__)
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        spec_cfg= config['spec_config']
+        try:
+            shared_cfg = config["shared"]
+            spec_cfg = config["spec_config"]
+            merged_cfg = {"sr": shared_cfg["sr"], **spec_cfg}
+        except KeyError as e:
+            raise KeyError(
+                f"config.yaml is missing expected key {e}. Check that 'shared.sr' and 'spec_config' are present."
+            ) from e
 
-        return cls(**spec_cfg)
+        return cls(**merged_cfg)
 
     ###########################################################################
     #                           PUBLIC METHODS                                #

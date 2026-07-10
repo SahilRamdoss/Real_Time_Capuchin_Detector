@@ -1,3 +1,5 @@
 .venv
 data
 models
+z
+__pycache__
