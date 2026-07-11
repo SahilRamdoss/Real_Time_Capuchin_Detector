@@ -2,6 +2,8 @@ import numpy as np
 from scipy.signal import butter, sosfilt, sosfiltfilt
 import yaml
 from utils.config_finder import find_config_path
+from typing import Optional
+from pathlib import Path
 
 class MelSpectrogramGen:
 
@@ -44,7 +46,7 @@ class MelSpectrogramGen:
 
 
     @classmethod
-    def from_config(cls, config_path: str = None) -> "MelSpectrogramGen":
+    def from_config(cls, config_path: Optional[Path] = None) -> "MelSpectrogramGen":
         """
         Use the settings found in config.yaml file to create spectrogram.
 
@@ -304,3 +306,9 @@ class MelSpectrogramGen:
         power = (np.abs(spec) ** 2).T
  
         return power.astype(np.float32)
+    
+
+
+if __name__ == "__main__":
+    gen = MelSpectrogramGen.from_config()
+    print("Ran comfortably")
