@@ -254,9 +254,7 @@ class MelSpectrogramGen:
     @staticmethod
     def _hz_to_mel(f):
         """Converts a frequency in Hz to the 'mel' perceptual scale."""
-        # This specific formula is a standard, widely-used approximation
-        # (the "HTK" mel formula) — you don't need to derive it, just
-        # know it's a standard conversion.
+        # The "HTK" mel formula
         return 2595.0 * np.log10(1.0 + f / 700.0)
  
     @staticmethod
