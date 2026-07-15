@@ -6,3 +6,6 @@ matplotlib
 scipy
 pyyaml
 sounddevice
+librosa
+soundfile
+audiomentations
