@@ -5,14 +5,23 @@ import time
 import random
 from pathlib import Path
 from utils.config_finder import find_config_path
-from typing import Optional
+from typing import Optional, Tuple
 
-## REMARK: THIS FILE IS USED FOR TRAINING ONLY. HENCE, WE CAN USE TENSORFLOW.IO FOR AUDIO PROCESSING
+## REMARK: THIS FILE IS USED FOR TRAINING ONLY. HENCE, WE CAN USE TENSORFLOW.IO FOR AUDIO PROCESSING IF NEEDED
 
 class AudioNorm:
-    def __init__(self, window_size: float, sr: int):
+    def __init__(self, window_size: float, sr: int, hop_size: float):
+        """
+        Constructor for the AudioNorm class. Initializes the window size, sampling rate, and hop size for audio normalization.
+
+        Args:
+            window_size (float): The duration of each audio segment in seconds.
+            sr (int): The target sampling rate in Hz.
+            hop_size (float): The hop size for overlapping segments in seconds.
+        """
         self.window_size = window_size
         self.sampling_rate = sr
+        self.hop_size = hop_size
 
     @classmethod
     def from_config(cls, config_path: Optional[Path] = None) -> "AudioNorm":
@@ -36,7 +45,8 @@ class AudioNorm:
             audio_cfg = config["audio_config"]
             merged_cfg = {
                 "window_size": shared_cfg["window_size"],
-                "sr": shared_cfg["sr"]
+                "sr": shared_cfg["sr"],
+                "hop_size": audio_cfg["hop_size"]
             }
         except KeyError as e:
             raise ValueError(
@@ -90,13 +100,14 @@ class AudioNorm:
         If the audio length >= window size ignore.
 
         ASSUMPTION: The audio input contains 1 full bird call. This is important as the padding
-        can be done at the start or the end of the call.
+        can only be done at the start or the end of the call.
 
         Args:
             audio_samples (np.ndarray): Audio samples data. Accepted shape is (Number of samples, )
 
         Returns:
             padded audio samples of shape (Number of samples,)
+
         """
 
         # Calculate the length of the audio
@@ -109,12 +120,7 @@ class AudioNorm:
         
         pad_amount = int(target_sample_count - number_of_samples)
 
-        choice = random.randint(1,2)
-
-        if choice == 1:
-            padded = np.pad(audio_samples, (0, pad_amount), mode="constant", constant_values=0.0)
-        else:
-            padded = np.pad(audio_samples, (pad_amount,0), mode='constant', constant_values=0.0)
+        padded = np.pad(audio_samples, (0, pad_amount), mode="constant", constant_values=0.0)
 
         return padded.astype(np.float32)
 
@@ -124,11 +130,43 @@ class AudioNorm:
         """
         raise NotImplementedError
     
-    def segmentation(self):
+    def segmentation(self, audio: np.ndarray, orig_sr: int) -> Tuple[list[np.ndarray], int]:
         """
-        Overlapping segmentation to be done
+        Splits audio into overlapping fixed-length segments using a sliding window.
+        Incomplete final windows are padded with silence at the end.
+
+        Args:
+            audio (np.ndarray): 1-D array of audio samples, shape (N,)
+
+        Returns:
+            List of np.ndarray segments, each of shape (window_samples,)
         """
-        raise NotImplementedError
+
+        # Compare audio sampling rate with sampling rate used by config.yaml file
+        if orig_sr != self.sampling_rate:
+            audio = self.normalize_sampling_rate(audio, orig_sr, self.sampling_rate)
+            print(f"Normalizing sampling rate from {orig_sr} to {self.sampling_rate}")
+
+        # Convert time durations to integer sample counts
+        window_samples = int(self.window_size * self.sampling_rate)
+        hop_samples    = int(self.hop_size   * self.sampling_rate)
+
+        segments = []
+        start = 0
+
+        while start < len(audio):
+            # Slice 1 window segment from the audio
+            # Numpy automatically handles cases where the slice exceeds the array length, returning a shorter array
+            segment = audio[start : start + window_samples]
+
+            # If this slice is shorter than the window, pad it to the full window size using silence at the end
+            if len(segment) < window_samples:
+                segment = self.silence_padding(segment)
+
+            segments.append(segment)
+            start += hop_samples   # increment by hop
+
+        return (segments, self.sampling_rate)
 
 if __name__ == "__main__":
     audionorm = AudioNorm.from_config()
