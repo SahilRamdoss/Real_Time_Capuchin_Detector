@@ -4,7 +4,7 @@ from pathlib import Path
 
 class AudioAug:
     def __init__(self):
-        colab_path = Path("/content/drive/MyDrive/Datasets/data/raw/Parsed_Not_Capuchinbird_Clips")
+        colab_path = Path("/content/drive/MyDrive/Datasets/data/Parsed_Not_Capuchinbird_Clips")
         local_path = Path.cwd() / "data" / "raw" / "Parsed_Not_Capuchinbird_Clips"
 
         noise_folder_path = colab_path if colab_path.exists() else local_path
