@@ -36,6 +36,6 @@ audio_config:
                           # and end of the call
 spec_aug_config:
   time_mask_param: 10
-  freq_mask_param: 6
+  freq_mask_param: 4
   n_freq_masks: 2
   n_time_masks: 3

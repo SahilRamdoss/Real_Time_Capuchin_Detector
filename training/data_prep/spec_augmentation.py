@@ -89,33 +89,27 @@ class SpecAugment:
         return self._mask_axis(spectrogram, self.time_mask_param, time_axis)
   
     def _mask_axis(self, spec: tf.Tensor, max_mask_size: int, axis: int) -> tf.Tensor:
-        """
-        A highly robust, core masking function that works on any axis 
-        without breaking the TensorFlow C++ graph.
-        """
         shape = tf.shape(spec)
         axis_len = shape[axis]
         
-        # Ensure we don't try to mask more data than the axis actually has
         max_size = tf.minimum(max_mask_size, axis_len)
         
-        # Determine the width and starting point of the mask
         mask_size = tf.random.uniform(shape=[], minval=0, maxval=max_size + 1, dtype=tf.int32)
         mask_start = tf.random.uniform(shape=[], minval=0, maxval=axis_len - mask_size + 1, dtype=tf.int32)
         mask_end = mask_start + mask_size
         
-        # Create a boolean mask (False where the mask goes, True otherwise)
+        # True for unmasked areas, False for masked areas
         indices = tf.range(axis_len, dtype=tf.int32)
-        mask = tf.logical_or(indices < mask_start, indices >= mask_end)
-        mask = tf.cast(mask, spec.dtype)
+        unmasked_region = tf.logical_or(indices < mask_start, indices >= mask_end)
         
-        # Reshape the 1D mask array so it broadcasts properly across the 2D/3D Spectrogram matrix
+        # Reshape boolean mask for broadcasting
         rank = tf.rank(spec)
         mask_shape = tf.where(tf.equal(tf.range(rank), axis), axis_len, 1)
-        mask = tf.reshape(mask, mask_shape)
+        unmasked_region = tf.reshape(unmasked_region, mask_shape)
         
-        # Apply the mask (masked values become 0.0)
-        return spec * mask
+        # Replace masked areas with the minimum dB value of the spectrogram (true silence)
+        min_db_value = tf.reduce_min(spec)
+        return tf.where(unmasked_region, spec, min_db_value)
 
 if __name__ == "__main__":
     spec_aug = SpecAugment.from_config()

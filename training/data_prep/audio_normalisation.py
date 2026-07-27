@@ -18,10 +18,10 @@ class AudioNorm:
             sr (int): The target sampling rate in Hz.
             hop_size (float): The hop size for overlapping segments in seconds.
         """
-        self.window_size = window_size
-        self.sampling_rate = sr
-        self.hop_size = hop_size
-        self.clip_pad_max_ratio = clip_pad_max_ratio
+        self._window_size = window_size
+        self._sampling_rate = sr
+        self._hop_size = hop_size
+        self._clip_pad_max_ratio = clip_pad_max_ratio
 
     @classmethod
     def from_config(cls, config_path: Optional[Path] = None) -> "AudioNorm":
@@ -75,7 +75,7 @@ class AudioNorm:
             raise ValueError("Original sampling rate cannot be zero or negative.")
         
         if target_sr == None:
-            target_sr = self.sampling_rate
+            target_sr = self._sampling_rate
         elif target_sr <= 0:
             raise ValueError("Target sampling rate cannot be zero or negative.")
 
@@ -95,7 +95,7 @@ class AudioNorm:
         
         return y_resampled
 
-    def silence_padding(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int]:
+    def silence_padding(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int, bool]:
         """
         This method takes the audio and normalizes the sampling rate to the value set in config.yaml. It then
         pads the audio at random amounts at the start and the end to make its length equal to the window size.
@@ -105,14 +105,14 @@ class AudioNorm:
             orig_sr (int) : The sampling rate of the audio
 
         Returns:
-            (The padded audio samples, sampling rate set in config.yaml)
+            (The padded audio samples, sampling rate set in config.yaml, boolean of whether audio was padded or not)
         """
         # Get the target number of samples
-        target_samples = int(self.window_size * self.sampling_rate)
+        target_samples = int(self._window_size * self._sampling_rate)
 
         # If the audio is at device sampling rate, resample it
-        if orig_sr != self.sampling_rate:
-            audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self.sampling_rate)
+        if orig_sr != self._sampling_rate:
+            audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self._sampling_rate)
 
         # Get current number of samples in audio
         audio_samples_amount = len(audio_samples)
@@ -122,7 +122,7 @@ class AudioNorm:
 
         # Check if padding is really needed
         if pad_amount <= 0:
-            return audio_samples, self.sampling_rate
+            return audio_samples, self._sampling_rate, False
 
         # Generate a random number of samples to pad at start of the call, using a uniform distribution
         pad_start_amount = random.randint(0, pad_amount)
@@ -130,7 +130,7 @@ class AudioNorm:
 
         audio_samples = np.pad(audio_samples, (pad_start_amount, pad_end_amount), mode='constant', constant_values=0.0)
 
-        return audio_samples, self.sampling_rate
+        return audio_samples, self._sampling_rate, True
     
     def segmentation(self, audio: np.ndarray, orig_sr: int) -> Tuple[list[np.ndarray], int]:
         """
@@ -145,13 +145,13 @@ class AudioNorm:
         """
 
         # Compare audio sampling rate with sampling rate used by config.yaml file
-        if orig_sr != self.sampling_rate:
-            audio = self.normalize_sampling_rate(audio, orig_sr, self.sampling_rate)
-            print(f"Normalizing sampling rate from {orig_sr} to {self.sampling_rate}")
+        if orig_sr != self._sampling_rate:
+            audio = self.normalize_sampling_rate(audio, orig_sr, self._sampling_rate)
+            print(f"Normalizing sampling rate from {orig_sr} to {self._sampling_rate}")
 
         # Convert time durations to integer sample counts
-        window_samples = int(self.window_size * self.sampling_rate)
-        hop_samples    = int(self.hop_size   * self.sampling_rate)
+        window_samples = int(self._window_size * self._sampling_rate)
+        hop_samples    = int(self._hop_size   * self._sampling_rate)
 
         segments = []
         start = 0
@@ -168,26 +168,26 @@ class AudioNorm:
             segments.append(segment)
             start += hop_samples   # increment by hop
 
-        return (segments, self.sampling_rate)
+        return (segments, self._sampling_rate)
 
     def random_clipping(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int]:
         """
         """
 
         # Check if audio has same sampling rate as in config.yaml file
-        if orig_sr != self.sampling_rate:
-            audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self.sampling_rate)
+        if orig_sr != self._sampling_rate:
+            audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self._sampling_rate)
 
         # Calculate the number of samples in a window
-        window_sample_amount = int(self.window_size * self.sampling_rate)
+        window_sample_amount = int(self._window_size * self._sampling_rate)
         # Calculate the number of samples in the audio
         audio_sample_amount = len(audio_samples)
         # Calculate the maximum amount of silence padding we can apply at the start and end
-        max_pad_amount = int(self.clip_pad_max_ratio * window_sample_amount)
+        max_pad_amount = int(self._clip_pad_max_ratio * window_sample_amount)
 
         # If audio length < window size, return the original audio
         if audio_sample_amount <= window_sample_amount:
-            return audio_samples, self.sampling_rate
+            return audio_samples, self._sampling_rate
 
         # Calculate the random amount by which you will pad the audio at start and end
         random_pad_start_amount = random.randint(0,max_pad_amount)
@@ -205,7 +205,7 @@ class AudioNorm:
         # Cut the clip from the audio
         clipped_audio = padded_audio[clip_start_index: clip_start_index + window_sample_amount]
 
-        return clipped_audio, self.sampling_rate
+        return clipped_audio, self._sampling_rate
 
 
 
