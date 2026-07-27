@@ -4,11 +4,14 @@ from pathlib import Path
 
 class AudioAug:
     def __init__(self):
-        noise_folder_path = Path.cwd().resolve() / "data" / "raw" / "Parsed_Not_Capuchinbird_Clips"
+        colab_path = Path("/content/drive/MyDrive/Datasets/data/raw/Parsed_Not_Capuchinbird_Clips")
+        local_path = Path.cwd() / "data" / "raw" / "Parsed_Not_Capuchinbird_Clips"
+
+        noise_folder_path = colab_path if colab_path.exists() else local_path
 
         self.augment = Compose([
             Gain(min_gain_db=-12.0, max_gain_db=12.0, p=1),
-            AddBackgroundNoise(sounds_path=r"C:\Users\udhay\OneDrive\Documents\University\Student_Teams\BIOM\Real_Time_Capuchin_Detector\data\raw\Parsed_Not_Capuchinbird_Clips", noise_rms="absolute", p=1),
+            AddBackgroundNoise(sounds_path=noise_folder_path, noise_rms="absolute", p=1),
             # ClippingDistortion(min_percentile_threshold=0, max_percentile_threshold=40, p=1)
         ])
 
