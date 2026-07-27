@@ -34,4 +34,8 @@ audio_config:
   clip_pad_max_ratio: 0.9 # Ratio relative to window size as to the maximum
                           # amount of silence that can be padded at the start
                           # and end of the call
-  
+spec_aug_config:
+  time_mask_param: 10
+  freq_mask_param: 6
+  n_freq_masks: 2
+  n_time_masks: 3
