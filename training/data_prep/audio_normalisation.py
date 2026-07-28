@@ -95,80 +95,80 @@ class AudioNorm:
         
         return y_resampled
 
-    def silence_padding(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int, bool]:
-        """
-        This method takes the audio and normalizes the sampling rate to the value set in config.yaml. It then
-        pads the audio at random amounts at the start and the end to make its length equal to the window size.
+    # def silence_padding(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int, bool]:
+    #     """
+    #     This method takes the audio and normalizes the sampling rate to the value set in config.yaml. It then
+    #     pads the audio at random amounts at the start and the end to make its length equal to the window size.
 
-        Args:
-            audio_samples (np.ndarray) : The audio samples of shape (Number_of_Samples, )
-            orig_sr (int) : The sampling rate of the audio
+    #     Args:
+    #         audio_samples (np.ndarray) : The audio samples of shape (Number_of_Samples, )
+    #         orig_sr (int) : The sampling rate of the audio
 
-        Returns:
-            (The padded audio samples, sampling rate set in config.yaml, boolean of whether audio was padded or not)
-        """
-        # Get the target number of samples
-        target_samples = int(self._window_size * self._sampling_rate)
+    #     Returns:
+    #         (The padded audio samples, sampling rate set in config.yaml, boolean of whether audio was padded or not)
+    #     """
+    #     # Get the target number of samples
+    #     target_samples = int(self._window_size * self._sampling_rate)
 
-        # If the audio is at device sampling rate, resample it
-        if orig_sr != self._sampling_rate:
-            audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self._sampling_rate)
+    #     # If the audio is at device sampling rate, resample it
+    #     if orig_sr != self._sampling_rate:
+    #         audio_samples = self.normalize_sampling_rate(audio_samples, orig_sr, self._sampling_rate)
 
-        # Get current number of samples in audio
-        audio_samples_amount = len(audio_samples)
+    #     # Get current number of samples in audio
+    #     audio_samples_amount = len(audio_samples)
 
-        # Calculate the number of samples that need to be padded
-        pad_amount = target_samples - audio_samples_amount
+    #     # Calculate the number of samples that need to be padded
+    #     pad_amount = target_samples - audio_samples_amount
 
-        # Check if padding is really needed
-        if pad_amount <= 0:
-            return audio_samples, self._sampling_rate, False
+    #     # Check if padding is really needed
+    #     if pad_amount <= 0:
+    #         return audio_samples, self._sampling_rate, False
 
-        # Generate a random number of samples to pad at start of the call, using a uniform distribution
-        pad_start_amount = random.randint(0, pad_amount)
-        pad_end_amount = target_samples - audio_samples_amount - pad_start_amount
+    #     # Generate a random number of samples to pad at start of the call, using a uniform distribution
+    #     pad_start_amount = random.randint(0, pad_amount)
+    #     pad_end_amount = target_samples - audio_samples_amount - pad_start_amount
 
-        audio_samples = np.pad(audio_samples, (pad_start_amount, pad_end_amount), mode='constant', constant_values=0.0)
+    #     audio_samples = np.pad(audio_samples, (pad_start_amount, pad_end_amount), mode='constant', constant_values=0.0)
 
-        return audio_samples, self._sampling_rate, True
+    #     return audio_samples, self._sampling_rate, True
     
-    def segmentation(self, audio: np.ndarray, orig_sr: int) -> Tuple[list[np.ndarray], int]:
-        """
-        Splits audio into overlapping fixed-length segments using a sliding window.
-        Incomplete final windows are padded with silence at the end.
+    # def segmentation(self, audio: np.ndarray, orig_sr: int) -> Tuple[list[np.ndarray], int]:
+    #     """
+    #     Splits audio into overlapping fixed-length segments using a sliding window.
+    #     Incomplete final windows are padded with silence at the end.
 
-        Args:
-            audio (np.ndarray): 1-D array of audio samples, shape (N,)
+    #     Args:
+    #         audio (np.ndarray): 1-D array of audio samples, shape (N,)
 
-        Returns:
-            List of np.ndarray segments, each of shape (window_samples,)
-        """
+    #     Returns:
+    #         List of np.ndarray segments, each of shape (window_samples,)
+    #     """
 
-        # Compare audio sampling rate with sampling rate used by config.yaml file
-        if orig_sr != self._sampling_rate:
-            audio = self.normalize_sampling_rate(audio, orig_sr, self._sampling_rate)
-            print(f"Normalizing sampling rate from {orig_sr} to {self._sampling_rate}")
+    #     # Compare audio sampling rate with sampling rate used by config.yaml file
+    #     if orig_sr != self._sampling_rate:
+    #         audio = self.normalize_sampling_rate(audio, orig_sr, self._sampling_rate)
+    #         print(f"Normalizing sampling rate from {orig_sr} to {self._sampling_rate}")
 
-        # Convert time durations to integer sample counts
-        window_samples = int(self._window_size * self._sampling_rate)
-        hop_samples    = int(self._hop_size   * self._sampling_rate)
+    #     # Convert time durations to integer sample counts
+    #     window_samples = int(self._window_size * self._sampling_rate)
+    #     hop_samples    = int(self._hop_size   * self._sampling_rate)
 
-        segments = []
-        start = 0
+    #     segments = []
+    #     start = 0
 
-        while start < len(audio):
-            # Slice 1 window segment from the audio
-            # Numpy automatically handles cases where the slice exceeds the array length, returning a shorter array
-            segment = audio[start : start + window_samples]
+    #     while start < len(audio):
+    #         # Slice 1 window segment from the audio
+    #         # Numpy automatically handles cases where the slice exceeds the array length, returning a shorter array
+    #         segment = audio[start : start + window_samples]
 
-            # If this slice is shorter than the window, pad it to the full window size using silence at the end
-            if len(segment) < window_samples:
-                segment = self.silence_padding(segment, orig_sr)
+    #         # If this slice is shorter than the window, pad it to the full window size using silence at the end
+    #         if len(segment) < window_samples:
+    #             segment = self.silence_padding(segment, orig_sr)
 
-            segments.append(segment)
-            start += hop_samples   # increment by hop
+    #         segments.append(segment)
+    #         start += hop_samples   # increment by hop
 
-        return (segments, self._sampling_rate)
+    #     return (segments, self._sampling_rate)
 
     def random_clipping(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int]:
         """
