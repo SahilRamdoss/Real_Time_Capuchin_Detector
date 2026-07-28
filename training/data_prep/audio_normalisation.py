@@ -172,6 +172,19 @@ class AudioNorm:
 
     def random_clipping(self, audio_samples: np.ndarray, orig_sr: int) -> Tuple[np.ndarray, int]:
         """
+        This function handles audio samples of all durations.
+
+        It firsts resamples the input audio to the sampling rate set in config.yaml file. It pads the audio with
+        silence at both the start and the end based on the clip_pad_max_ratio in config.yaml. Finally, it clips a 
+        random window of duration set in config.yaml from the padded audio.
+
+        @Params:
+            audio_samples (np.ndarray): The samples of the input audio
+            orig_sr (int): The original sampling rate of the audio
+
+        @Return:
+            clipped audio (np.ndarray): The clipped audio sample
+            sample rate (int): The sample rate as set in config.yaml
         """
 
         # Check if audio has same sampling rate as in config.yaml file
@@ -180,21 +193,12 @@ class AudioNorm:
 
         # Calculate the number of samples in a window
         window_sample_amount = int(self._window_size * self._sampling_rate)
-        # Calculate the number of samples in the audio
-        audio_sample_amount = len(audio_samples)
-        # Calculate the maximum amount of silence padding we can apply at the start and end
+
+        # Calculate the amount of silence padding we can apply at the start and end
         max_pad_amount = int(self._clip_pad_max_ratio * window_sample_amount)
 
-        # If audio length < window size, return the original audio
-        if audio_sample_amount <= window_sample_amount:
-            return audio_samples, self._sampling_rate
-
-        # Calculate the random amount by which you will pad the audio at start and end
-        random_pad_start_amount = random.randint(0,max_pad_amount)
-        random_pad_end_amount = random.randint(0, max_pad_amount)
-
         # Obtain the padded audio
-        padded_audio = np.pad(audio_samples, (random_pad_start_amount, random_pad_end_amount), mode="constant", constant_values=0.0)
+        padded_audio = np.pad(audio_samples, (max_pad_amount, max_pad_amount), mode="constant", constant_values=0.0)
 
         # Calculate the max_clip_start_index
         max_clip_start_index = len(padded_audio) - window_sample_amount

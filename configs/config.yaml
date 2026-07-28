@@ -33,7 +33,8 @@ audio_config:
   hop_size: 2.0           # Hop between overlapping segements in seconds
   clip_pad_max_ratio: 0.9 # Ratio relative to window size as to the maximum
                           # amount of silence that can be padded at the start
-                          # and end of the call
+                          # and end of the call. This MUST be greater than 0.5
+                          # because of random clipping logic
 spec_aug_config:
   time_mask_param: 10
   freq_mask_param: 4
