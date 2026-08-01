@@ -14,12 +14,12 @@ spec_config:
                       # = sharper cutoff at the edges of the band, but more
                       # computation. 4 is a common, safe default.
 
-  n_fft: 1024         # FFT window size (in samples) used to compute the
+  n_fft: 256         # FFT window size (in samples) used to compute the
                       # spectrogram. Bigger n_fft = more detail in frequency,
                       # less detail in time. 1024 is a reasonable default
                       # for this kind of audio.
 
-  hop_length: 512     # How many samples to move forward between each FFT
+  hop_length: 128     # How many samples to move forward between each FFT
                       # window. Smaller hop = more overlap = smoother/more
                       # detailed spectrogram in time, but more computation.
                       # 512 = half of n_fft, a common choice.
